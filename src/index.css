@@ -1,0 +1,119 @@
+@tailwind base;
+
+@tailwind components;
+
+@tailwind utilities;
+
+
+
+html {
+
+  scroll-behavior: smooth;
+
+  height: 100%;
+
+}
+
+
+
+body {
+
+  margin: 0;
+
+  min-height: 100%;
+
+  overflow: hidden;
+
+  padding-bottom: env(safe-area-inset-bottom);
+
+  font-family: "DM Sans", system-ui, sans-serif;
+
+  color: #111111;
+
+  background-color: #f8f1e7;
+
+  -webkit-font-smoothing: antialiased;
+
+}
+
+
+
+#root {
+
+  height: 100dvh;
+
+  max-height: 100dvh;
+
+  overflow: hidden;
+
+}
+
+
+
+@keyframes invite-fade-in {
+
+  from {
+
+    opacity: 0;
+
+    transform: translateY(14px);
+
+  }
+
+  to {
+
+    opacity: 1;
+
+    transform: translateY(0);
+
+  }
+
+}
+
+
+
+@keyframes invite-float {
+
+  0%,
+
+  100% {
+
+    transform: translateY(0);
+
+  }
+
+  50% {
+
+    transform: translateY(-8px);
+
+  }
+
+}
+
+
+
+.invite-fade {
+
+  animation: invite-fade-in 1s ease-out forwards;
+
+}
+
+
+
+.invite-fade-delay {
+
+  opacity: 0;
+
+  animation: invite-fade-in 1s ease-out 0.25s forwards;
+
+}
+
+
+
+.invite-float {
+
+  animation: invite-float 6s ease-in-out infinite;
+
+}
+
+
