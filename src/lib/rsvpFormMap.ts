@@ -67,7 +67,10 @@ export function formStateToPayload(
   return {
     guestId: form.guestId,
     fullName: getGuestNameFrom(guests, form.guestId).trim(),
-    phoneE164: phoneLocalToE164(form.phoneLocal),
+    phoneE164:
+      attendance === "no"
+        ? null
+        : phoneLocalToE164(form.phoneLocal),
     attendanceStatus: attendance,
     needsTransport: wantsAny,
     transportDirection,

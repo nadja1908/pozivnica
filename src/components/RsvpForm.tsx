@@ -75,7 +75,7 @@ function needsReturnZone(d: FormState["transportDirection"]): boolean {
 function stepOrder(form: FormState): StepId[] {
   const o: StepId[] = ["name", "attendance"];
   if (form.attendanceStatus === "no") {
-    o.push("phone", "decline");
+    o.push("decline");
     return o;
   }
   if (form.attendanceStatus === "yes" || form.attendanceStatus === "") {
@@ -169,7 +169,6 @@ function validateAll(form: FormState): FieldErrors {
   if (form.attendanceStatus === "no") {
     e = { ...e, ...validateStep("name", form) };
     e = { ...e, ...validateStep("attendance", form) };
-    e = { ...e, ...validateStep("phone", form) };
     return e;
   }
   for (const step of stepOrder(form)) {
@@ -265,6 +264,10 @@ export function RsvpForm({
       form.attendanceStatus === ""
     ) {
       setActiveStepId("attendance");
+      return;
+    }
+    if (activeStepId === "phone" && form.attendanceStatus === "no") {
+      setActiveStepId("decline");
       return;
     }
     if (activeStepId === "pickupZone") {
@@ -544,6 +547,7 @@ export function RsvpForm({
                             attendanceStatus: value,
                             ...(value === "no"
                               ? {
+                                  phoneLocal: "",
                                   transportDirection: "" as const,
                                   pickupLocation: "",
                                   customPickupLocation: "",
@@ -984,15 +988,21 @@ export function RsvpForm({
             </div>
 
             <div className="relative z-10 shrink-0 space-y-2 border-t border-[rgba(138,101,28,0.12)] bg-gradient-to-b from-transparent to-[#FFFCF7]/90 pt-3 pb-1 sm:space-y-3 sm:pt-4">
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between sm:gap-3">
-                <button
-                  type="button"
-                  onClick={goBack}
-                  disabled={stepIndex <= 0 || isSubmitting}
-                  className="min-h-[46px] rounded-full border-2 border-[rgba(138,101,28,0.25)] bg-white/95 px-5 py-2.5 text-sm font-semibold text-[#5c4a32] transition hover:bg-[#FAF0D4]/50 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Nazad
-                </button>
+              <div
+                className={`flex flex-col-reverse gap-2 sm:flex-row sm:gap-3 ${
+                  stepIndex > 0 ? "sm:justify-between" : "sm:justify-end"
+                }`}
+              >
+                {stepIndex > 0 && (
+                  <button
+                    type="button"
+                    onClick={goBack}
+                    disabled={isSubmitting}
+                    className="min-h-[46px] rounded-full border-2 border-[rgba(138,101,28,0.25)] bg-white/95 px-5 py-2.5 text-sm font-semibold text-[#5c4a32] transition hover:bg-[#FAF0D4]/50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Nazad
+                  </button>
+                )}
 
                 {currentStep !== "review" && currentStep !== "decline" ? (
                   <button

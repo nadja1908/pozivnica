@@ -50,7 +50,7 @@ export interface RsvpResponse {
 export interface RsvpPayload {
   guestId: string;
   fullName: string;
-  phoneE164: string;
+  phoneE164: string | null;
   attendanceStatus: AttendanceStatus;
   needsTransport: boolean;
   transportDirection: TransportDirection | null;
