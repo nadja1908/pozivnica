@@ -15,6 +15,7 @@ export interface RsvpRowDb {
   drink_preference: string;
   song_request: string | null;
   note: string | null;
+  selfie_storage_path: string | null;
   created_at: string;
 }
 

@@ -11,6 +11,7 @@ import { useGuests } from "./hooks/useGuests";
 import { isSupabaseConfigured } from "./lib/supabase";
 import { formStateToPayload } from "./lib/rsvpFormMap";
 import { fetchRsvpResponses, upsertRsvp } from "./services/rsvp";
+import { publicSelfieUrl, uploadRsvpSelfie } from "./services/selfieUpload";
 import type { FormState } from "./types/rsvpForm";
 
 /** Probaj prvo glavnu sliku u repo-u (OneDrive); rezerva graduation-child.png u public/. */
@@ -346,7 +347,13 @@ export default function App() {
     setRsvpSubmitError(null);
     setRsvpSubmitting(true);
     try {
-      await upsertRsvp(formStateToPayload(form, guests));
+      const payload = formStateToPayload(form, guests);
+      let selfiePath = payload.selfieStoragePath;
+      if (form.selfieFile) {
+        const storagePath = await uploadRsvpSelfie(form.guestId, form.selfieFile);
+        selfiePath = publicSelfieUrl(storagePath);
+      }
+      await upsertRsvp({ ...payload, selfieStoragePath: selfiePath });
       setRsvpSuccess(true);
       await refreshSubmittedGuestIds();
     } catch (e) {
@@ -384,8 +391,8 @@ export default function App() {
       {/* Desktop — 50/50, h-full roditelja, slika vertikalno centrirana */}
       <section className="relative z-[2] hidden min-h-0 flex-1 flex-col overflow-hidden lg:flex">
         <div className="invite-fade grid h-full min-h-0 flex-1 grid-cols-2 gap-0">
-          <div className="flex h-full min-h-0 min-w-0 flex-col justify-center overflow-hidden px-6 py-6 xl:px-12 xl:py-8">
-            <div className="mx-auto flex w-full max-w-[min(100%,22rem)] flex-col gap-5 xl:max-w-[23rem] lg:mx-0 lg:max-w-[min(100%,24rem)]">
+          <div className="relative flex h-full min-h-0 min-w-0 flex-col justify-center overflow-hidden px-6 py-6 xl:px-12 xl:py-8">
+            <div className="relative z-[2] mx-auto flex w-full max-w-[min(100%,22rem)] flex-col gap-5 xl:max-w-[23rem] lg:mx-0 lg:max-w-[min(100%,24rem)]">
               <TitleBlock />
               <EventInformationCard
                 className="max-w-none"

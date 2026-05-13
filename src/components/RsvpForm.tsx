@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { publicSelfieUrl, validateSelfieFile } from "../services/selfieUpload";
 import type { Guest } from "../data/guests";
 import { getGuestNameFrom, sortGuestsByName } from "../data/guests";
 import type { FieldErrors, FormState } from "../types/rsvpForm";
@@ -32,6 +33,7 @@ type StepId =
   | "decline"
   | "transport"
   | "pickupZone"
+  | "selfie"
   | "drink"
   | "extra"
   | "review";
@@ -84,6 +86,7 @@ function stepOrder(form: FormState): StepId[] {
     if (wantsPickupZones(form)) {
       o.push("pickupZone");
     }
+    o.push("selfie");
   }
   o.push("drink", "extra", "review");
   return o;
@@ -175,6 +178,7 @@ function validateAll(form: FormState): FieldErrors {
     if (
       step === "review" ||
       step === "extra" ||
+      step === "selfie" ||
       step === "decline"
     ) {
       continue;
@@ -205,6 +209,7 @@ const stepTitles: Record<StepId, string> = {
   decline: "Imaš još jedan momenat da razmisliš",
   transport: "Do žurke",
   pickupZone: "Zone (polazak i povratak)",
+  selfie: "Selfi za spomenar",
   drink: "Šta sipamo?",
   extra: "Zahtev za pesmu",
   review: "Gotovo — pregled",
@@ -233,6 +238,20 @@ export function RsvpForm({
     lockGuestSelection && initialValues?.guestId ? "attendance" : "name",
   );
   const [pageMotion, setPageMotion] = useState<"next" | "prev">("next");
+  const [selfiePreviewUrl, setSelfiePreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (form.selfieFile) {
+      const u = URL.createObjectURL(form.selfieFile);
+      setSelfiePreviewUrl(u);
+      return () => URL.revokeObjectURL(u);
+    }
+    setSelfiePreviewUrl(
+      form.selfieStoragePath
+        ? publicSelfieUrl(form.selfieStoragePath)
+        : null,
+    );
+  }, [form.selfieFile, form.selfieStoragePath]);
 
   const guestsSorted = useMemo(() => sortGuestsByName(guests), [guests]);
   const guestsForNameStep = useMemo(() => {
@@ -271,11 +290,11 @@ export function RsvpForm({
       return;
     }
     if (activeStepId === "pickupZone") {
-      setActiveStepId("drink");
+      setActiveStepId("selfie");
       return;
     }
     if (activeStepId === "transport") {
-      setActiveStepId(wantsPickupZones(form) ? "pickupZone" : "drink");
+      setActiveStepId(wantsPickupZones(form) ? "pickupZone" : "selfie");
       return;
     }
     if (steps.includes("decline")) {
@@ -555,6 +574,8 @@ export function RsvpForm({
                                   customPickupLocationReturn: "",
                                   drinkPreferences: [],
                                   songRequest: "",
+                                  selfieFile: null,
+                                  selfieStoragePath: null,
                                 }
                               : {}),
                           }))
@@ -825,6 +846,73 @@ export function RsvpForm({
               </div>
             )}
 
+            {currentStep === "selfie" && (
+              <div className="mt-4 space-y-4">
+                <p className="text-xs leading-relaxed text-[#6b5b42] sm:text-sm">
+                  Opciono — jedna slika za spomenar (JPG, PNG ili WebP, do{" "}
+                  <strong className="text-[#1c1917]">5 MB</strong>). Možeš i da
+                  preskočiš.
+                </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                  <label className="inline-flex min-h-[46px] cursor-pointer items-center justify-center rounded-full border-2 border-[#C99A2E] bg-[#FAF0D4]/80 px-5 py-2.5 text-sm font-semibold text-[#5c4a32] transition hover:bg-[#FAF0D4] active:scale-[0.99]">
+                    <span>Izaberi ili uslikaj</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      capture="user"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!file) return;
+                        const msg = validateSelfieFile(file);
+                        if (msg) {
+                          setErrors((x) => ({ ...x, selfieFile: msg }));
+                          return;
+                        }
+                        setErrors((x) => {
+                          const { selfieFile: _, ...rest } = x;
+                          return rest;
+                        });
+                        setForm((f) => ({ ...f, selfieFile: file }));
+                      }}
+                    />
+                  </label>
+                  {(form.selfieFile || form.selfieStoragePath) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForm((f) => ({
+                          ...f,
+                          selfieFile: null,
+                          selfieStoragePath: null,
+                        }));
+                        setErrors((x) => {
+                          const { selfieFile: _, ...rest } = x;
+                          return rest;
+                        });
+                      }}
+                      className="min-h-[46px] rounded-full border border-[rgba(138,101,28,0.35)] bg-white/90 px-4 py-2 text-sm font-semibold text-[#6b5b42] transition hover:bg-white"
+                    >
+                      Bez slike
+                    </button>
+                  )}
+                </div>
+                {errors.selfieFile && (
+                  <p className="text-sm text-[#9a3b2f]">{errors.selfieFile}</p>
+                )}
+                {selfiePreviewUrl && (
+                  <div className="overflow-hidden rounded-xl bg-white ring-1 ring-[rgba(138,101,28,0.15)]">
+                    <img
+                      src={selfiePreviewUrl}
+                      alt="Pregled slike"
+                      className="mx-auto block max-h-[min(50vh,360px)] w-full object-contain"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             {currentStep === "drink" && (
               <fieldset className="mt-4">
                 <legend className="text-sm font-semibold text-[#1c1917]">
@@ -883,10 +971,7 @@ export function RsvpForm({
             {currentStep === "extra" && (
               <div className="mt-4 space-y-3">
                 <div>
-                  <label
-                    htmlFor="songRequest"
-                    className="block text-sm font-semibold text-[#1c1917]"
-                  >
+                  <label htmlFor="songRequest" className="sr-only">
                     Zahtev za pesmu
                   </label>
                   <input
@@ -968,6 +1053,23 @@ export function RsvpForm({
                       )}
                   </>
                 )}
+                {(form.selfieFile || form.selfieStoragePath) &&
+                  form.attendanceStatus !== "no" && (
+                    <div className="flex flex-col gap-1 border-b border-[#E8DFD0] pb-2.5 sm:flex-row sm:items-center sm:justify-between">
+                      <dt className="text-[#6b5b42]">Selfi</dt>
+                      <dd className="flex justify-end">
+                        {selfiePreviewUrl ? (
+                          <img
+                            src={selfiePreviewUrl}
+                            alt=""
+                            className="h-16 w-16 rounded-lg border border-[#E8DFD0] object-cover"
+                          />
+                        ) : (
+                          <span className="font-semibold text-[#1c1917]">Da</span>
+                        )}
+                      </dd>
+                    </div>
+                  )}
                 <div className="flex flex-col gap-0.5 border-b border-[#E8DFD0] pb-2.5 sm:flex-row sm:justify-between">
                   <dt className="text-[#6b5b42]">Piće</dt>
                   <dd className="text-right font-semibold text-[#1c1917]">

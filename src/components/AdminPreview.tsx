@@ -1,4 +1,5 @@
 import type { RsvpResponse } from "../types/rsvp";
+import { publicSelfieUrl } from "../services/selfieUpload";
 import {
   attendanceLabel,
   formatDrinkPreferences,
@@ -78,6 +79,9 @@ export function AdminPreview({
                 <th className="px-4 py-3 font-semibold text-champagne-900">
                   Pesma
                 </th>
+                <th className="px-4 py-3 font-semibold text-champagne-900">
+                  Selfi
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -132,6 +136,24 @@ export function AdminPreview({
                   </td>
                   <td className="px-4 py-3 text-champagne-700">
                     {r.songRequest || "—"}
+                  </td>
+                  <td className="px-4 py-3">
+                    {r.selfieStoragePath ? (
+                      <a
+                        href={publicSelfieUrl(r.selfieStoragePath)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block"
+                      >
+                        <img
+                          src={publicSelfieUrl(r.selfieStoragePath)}
+                          alt=""
+                          className="h-12 w-12 rounded-lg border border-champagne-200 object-cover"
+                        />
+                      </a>
+                    ) : (
+                      <span className="text-champagne-500">—</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -209,6 +231,24 @@ export function AdminPreview({
                   <dt className="text-champagne-600">Pesma</dt>
                   <dd className="text-champagne-900">{r.songRequest || "—"}</dd>
                 </div>
+                {r.selfieStoragePath ? (
+                  <div>
+                    <dt className="text-champagne-600">Selfi</dt>
+                    <dd className="mt-1">
+                      <a
+                        href={publicSelfieUrl(r.selfieStoragePath)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={publicSelfieUrl(r.selfieStoragePath)}
+                          alt=""
+                          className="max-h-40 rounded-xl border border-champagne-200 object-cover"
+                        />
+                      </a>
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
             </article>
           ))}

@@ -18,6 +18,7 @@ create table if not exists public.rsvp_responses (
   drink_preference text not null,
   song_request text,
   note text,
+  selfie_storage_path text,
   created_at timestamptz not null default now(),
   constraint rsvp_responses_guest_id_key unique (guest_id)
 );

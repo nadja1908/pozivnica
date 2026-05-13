@@ -44,6 +44,8 @@ export interface RsvpResponse {
   drinkPreferences: DrinkPreference[];
   songRequest: string | null;
   note: string | null;
+  /** Puna javna URL adresa slike ili stara relativna putanja u `rsvp-selfies`. */
+  selfieStoragePath: string | null;
   createdAt: string;
 }
 
@@ -61,4 +63,6 @@ export interface RsvpPayload {
   drinkPreferences: DrinkPreference[];
   songRequest: string | null;
   note: string | null;
+  /** Ista vrednost kao u bazi: pun URL posle uploada, ili null. */
+  selfieStoragePath: string | null;
 }

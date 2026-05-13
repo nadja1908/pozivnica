@@ -17,6 +17,10 @@ export interface FormState {
   customPickupLocationReturn: string;
   drinkPreferences: DrinkPreference[];
   songRequest: string;
+  /** Sačuvana javna URL adresa ili relativna putanja (posle uploada ide pun URL). */
+  selfieStoragePath: string | null;
+  /** Nova slika za upload pri slanju; ne ide u bazu direktno. */
+  selfieFile: File | null;
 }
 
 export interface FieldErrors {
@@ -29,6 +33,7 @@ export interface FieldErrors {
   pickupLocationReturn?: string;
   customPickupLocationReturn?: string;
   drinkPreferences?: string;
+  selfieFile?: string;
 }
 
 export const emptyFormState = (): FormState => ({
@@ -42,4 +47,6 @@ export const emptyFormState = (): FormState => ({
   customPickupLocationReturn: "",
   drinkPreferences: [],
   songRequest: "",
+  selfieStoragePath: null,
+  selfieFile: null,
 });

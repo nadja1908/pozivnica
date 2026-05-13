@@ -83,6 +83,8 @@ export function formStateToPayload(
     drinkPreferences,
     songRequest: form.songRequest.trim() || null,
     note: null,
+    selfieStoragePath:
+      attendance === "no" ? null : (form.selfieStoragePath ?? null),
   };
 }
 
@@ -103,5 +105,7 @@ export function responseToFormState(
     drinkPreferences:
       row.attendanceStatus === "no" ? [] : [...row.drinkPreferences],
     songRequest: row.songRequest ?? "",
+    selfieStoragePath: row.selfieStoragePath ?? null,
+    selfieFile: null,
   };
 }

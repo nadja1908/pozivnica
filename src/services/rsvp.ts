@@ -35,6 +35,7 @@ function rowToResponse(row: RsvpRowDb): RsvpResponse {
     drinkPreferences: parseDrinkPreferences(row.drink_preference),
     songRequest: row.song_request,
     note: row.note,
+    selfieStoragePath: row.selfie_storage_path ?? null,
     createdAt: row.created_at,
   };
 }
@@ -58,6 +59,7 @@ function payloadToRow(payload: RsvpPayload): RsvpInsert {
         : "non_alcoholic",
     song_request: payload.songRequest?.trim() || null,
     note: payload.note?.trim() || null,
+    selfie_storage_path: payload.selfieStoragePath ?? null,
   };
 }
 
