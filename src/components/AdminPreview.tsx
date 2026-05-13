@@ -1,8 +1,9 @@
 import type { RsvpResponse } from "../types/rsvp";
 import {
   attendanceLabel,
-  drinkLabel,
+  formatDrinkPreferences,
   pickupLabel,
+  transportDirectionLabel,
 } from "../lib/labels";
 import { SectionCard } from "./SectionCard";
 
@@ -53,7 +54,7 @@ export function AdminPreview({
 
       {!loading && !error && responses.length > 0 && (
         <div className="mt-8 hidden overflow-x-auto rounded-2xl border border-champagne-200 bg-white/60 md:block">
-          <table className="w-full min-w-[800px] text-left text-sm">
+          <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
               <tr className="border-b border-champagne-200 bg-champagne-50/80">
                 <th className="px-4 py-3 font-semibold text-champagne-900">
@@ -69,19 +70,13 @@ export function AdminPreview({
                   Dolazak
                 </th>
                 <th className="px-4 py-3 font-semibold text-champagne-900">
-                  Prevoz
-                </th>
-                <th className="px-4 py-3 font-semibold text-champagne-900">
-                  Stanica
+                  Prevoz / zone
                 </th>
                 <th className="px-4 py-3 font-semibold text-champagne-900">
                   Piće
                 </th>
                 <th className="px-4 py-3 font-semibold text-champagne-900">
                   Pesma
-                </th>
-                <th className="px-4 py-3 font-semibold text-champagne-900">
-                  Napomena
                 </th>
               </tr>
             </thead>
@@ -103,25 +98,40 @@ export function AdminPreview({
                   <td className="px-4 py-3 text-champagne-800">
                     {attendanceLabel(r.attendanceStatus)}
                   </td>
-                  <td className="px-4 py-3 text-champagne-800">
-                    {r.needsTransport ? "Da" : "Ne"}
+                  <td className="max-w-[220px] px-4 py-3 text-sm text-champagne-800">
+                    <div>{transportDirectionLabel(r.transportDirection)}</div>
+                    {(r.pickupLocation || r.pickupLocationReturn) && (
+                      <div className="mt-1 text-xs leading-snug text-champagne-700">
+                        {r.pickupLocation && (
+                          <span>
+                            Pol.:{" "}
+                            {pickupLabel(r.pickupLocation)}
+                            {r.pickupLocation === "other" && r.customPickupLocation
+                              ? ` (${r.customPickupLocation})`
+                              : ""}
+                          </span>
+                        )}
+                        {r.pickupLocation && r.pickupLocationReturn ? (
+                          <br />
+                        ) : null}
+                        {r.pickupLocationReturn && (
+                          <span>
+                            Pov.:{" "}
+                            {pickupLabel(r.pickupLocationReturn)}
+                            {r.pickupLocationReturn === "other" &&
+                            r.customPickupLocationReturn
+                              ? ` (${r.customPickupLocationReturn})`
+                              : ""}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-4 py-3 text-champagne-800">
-                    {r.pickupLocation
-                      ? pickupLabel(r.pickupLocation) +
-                        (r.pickupLocation === "other" && r.customPickupLocation
-                          ? ` — ${r.customPickupLocation}`
-                          : "")
-                      : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-champagne-800">
-                    {drinkLabel(r.drinkPreference)}
+                  <td className="max-w-[240px] px-4 py-3 text-champagne-800">
+                    {formatDrinkPreferences(r.drinkPreferences)}
                   </td>
                   <td className="px-4 py-3 text-champagne-700">
                     {r.songRequest || "—"}
-                  </td>
-                  <td className="max-w-[200px] truncate px-4 py-3 text-champagne-700">
-                    {r.note || "—"}
                   </td>
                 </tr>
               ))}
@@ -160,35 +170,44 @@ export function AdminPreview({
                   </dd>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <dt className="text-champagne-600">Prevoz</dt>
-                  <dd className="text-champagne-900">
-                    {r.needsTransport ? "Da" : "Ne"}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-champagne-600">Stanica</dt>
-                  <dd className="max-w-[60%] text-right text-champagne-900">
-                    {r.pickupLocation
-                      ? pickupLabel(r.pickupLocation) +
-                        (r.pickupLocation === "other" && r.customPickupLocation
-                          ? ` — ${r.customPickupLocation}`
-                          : "")
-                      : "—"}
+                  <dt className="shrink-0 text-champagne-600">Prevoz</dt>
+                  <dd className="max-w-[70%] text-right text-champagne-900">
+                    <div>{transportDirectionLabel(r.transportDirection)}</div>
+                    {(r.pickupLocation || r.pickupLocationReturn) && (
+                      <div className="mt-1 text-xs leading-snug text-champagne-700">
+                        {r.pickupLocation && (
+                          <span>
+                            Pol.: {pickupLabel(r.pickupLocation)}
+                            {r.pickupLocation === "other" && r.customPickupLocation
+                              ? ` (${r.customPickupLocation})`
+                              : ""}
+                          </span>
+                        )}
+                        {r.pickupLocation && r.pickupLocationReturn ? (
+                          <br />
+                        ) : null}
+                        {r.pickupLocationReturn && (
+                          <span>
+                            Pov.: {pickupLabel(r.pickupLocationReturn)}
+                            {r.pickupLocationReturn === "other" &&
+                            r.customPickupLocationReturn
+                              ? ` (${r.customPickupLocationReturn})`
+                              : ""}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-champagne-600">Piće</dt>
-                  <dd className="text-champagne-900">
-                    {drinkLabel(r.drinkPreference)}
+                  <dd className="max-w-[70%] text-right text-champagne-900">
+                    {formatDrinkPreferences(r.drinkPreferences)}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-champagne-600">Pesma</dt>
                   <dd className="text-champagne-900">{r.songRequest || "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-champagne-600">Napomena</dt>
-                  <dd className="text-champagne-900">{r.note || "—"}</dd>
                 </div>
               </dl>
             </article>

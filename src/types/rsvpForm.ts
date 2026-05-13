@@ -2,6 +2,7 @@ import type {
   AttendanceStatus,
   DrinkPreference,
   PickupLocation,
+  TransportDirection,
 } from "./rsvp";
 
 export interface FormState {
@@ -9,32 +10,36 @@ export interface FormState {
   /** Cifre posle +381, bez vodeće nule (npr. 641234567). */
   phoneLocal: string;
   attendanceStatus: AttendanceStatus | "";
-  needsTransport: "" | "yes" | "no";
+  transportDirection: TransportDirection | "";
   pickupLocation: PickupLocation | "";
   customPickupLocation: string;
-  drinkPreference: DrinkPreference | "";
+  pickupLocationReturn: PickupLocation | "";
+  customPickupLocationReturn: string;
+  drinkPreferences: DrinkPreference[];
   songRequest: string;
-  note: string;
 }
 
 export interface FieldErrors {
   guestId?: string;
   phoneLocal?: string;
   attendanceStatus?: string;
-  needsTransport?: string;
+  transportDirection?: string;
   pickupLocation?: string;
   customPickupLocation?: string;
-  drinkPreference?: string;
+  pickupLocationReturn?: string;
+  customPickupLocationReturn?: string;
+  drinkPreferences?: string;
 }
 
 export const emptyFormState = (): FormState => ({
   guestId: "",
   phoneLocal: "",
   attendanceStatus: "",
-  needsTransport: "",
+  transportDirection: "",
   pickupLocation: "",
   customPickupLocation: "",
-  drinkPreference: "",
+  pickupLocationReturn: "",
+  customPickupLocationReturn: "",
+  drinkPreferences: [],
   songRequest: "",
-  note: "",
 });

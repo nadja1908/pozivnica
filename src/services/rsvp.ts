@@ -1,7 +1,23 @@
 import type { RsvpInsert, RsvpRowDb } from "../lib/database.types";
 import { getSupabase } from "../lib/supabase";
 import { formatSupabaseError } from "../lib/supabaseErrors";
-import type { RsvpPayload, RsvpResponse } from "../types/rsvp";
+import { parseDrinkPreferences } from "../lib/labels";
+import type { RsvpPayload, RsvpResponse, TransportDirection } from "../types/rsvp";
+
+function transportDirectionFromDb(
+  s: string | null | undefined,
+): TransportDirection | null {
+  if (!s) return null;
+  if (
+    s === "none" ||
+    s === "to_cottage" ||
+    s === "return_only" ||
+    s === "both"
+  ) {
+    return s;
+  }
+  return null;
+}
 
 function rowToResponse(row: RsvpRowDb): RsvpResponse {
   return {
@@ -11,9 +27,12 @@ function rowToResponse(row: RsvpRowDb): RsvpResponse {
     phoneE164: row.phone ?? null,
     attendanceStatus: row.attendance_status,
     needsTransport: row.needs_transport,
+    transportDirection: transportDirectionFromDb(row.transport_direction),
     pickupLocation: row.pickup_location,
     customPickupLocation: row.custom_pickup_location,
-    drinkPreference: row.drink_preference,
+    pickupLocationReturn: row.pickup_location_return,
+    customPickupLocationReturn: row.custom_pickup_location_return,
+    drinkPreferences: parseDrinkPreferences(row.drink_preference),
     songRequest: row.song_request,
     note: row.note,
     createdAt: row.created_at,
@@ -27,9 +46,16 @@ function payloadToRow(payload: RsvpPayload): RsvpInsert {
     phone: payload.phoneE164,
     attendance_status: payload.attendanceStatus,
     needs_transport: payload.needsTransport,
+    transport_direction: payload.transportDirection,
     pickup_location: payload.pickupLocation,
     custom_pickup_location: payload.customPickupLocation?.trim() || null,
-    drink_preference: payload.drinkPreference,
+    pickup_location_return: payload.pickupLocationReturn,
+    custom_pickup_location_return:
+      payload.customPickupLocationReturn?.trim() || null,
+    drink_preference:
+      payload.drinkPreferences.length > 0
+        ? payload.drinkPreferences.join(",")
+        : "non_alcoholic",
     song_request: payload.songRequest?.trim() || null,
     note: payload.note?.trim() || null,
   };

@@ -6,7 +6,7 @@ import type {
 
 export const PICKUP_LOCATIONS: { value: PickupLocation; label: string }[] = [
   { value: "kampus", label: "Kampus" },
-  { value: "parkovi", label: "Parkovi" },
+  { value: "parkovi", label: "ParkNovi" },
   {
     value: "parking_idea_liman",
     label: "Parking kod Idee na Limanu",

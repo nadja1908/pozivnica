@@ -11,14 +11,16 @@ import {
 } from "../constants/options";
 import {
   attendanceLabel,
-  drinkLabel,
+  formatDrinkPreferences,
   pickupLabel,
+  transportDirectionLabel,
 } from "../lib/labels";
 import { isValidPhoneLocal, sanitizePhoneLocal } from "../lib/phone";
 import type {
   AttendanceStatus,
   DrinkPreference,
   PickupLocation,
+  TransportDirection,
 } from "../types/rsvp";
 
 export type { FormState } from "../types/rsvpForm";
@@ -34,6 +36,42 @@ type StepId =
   | "extra"
   | "review";
 
+const TRANSPORT_OPTIONS: {
+  value: TransportDirection;
+  label: string;
+}[] = [
+  { value: "to_cottage", label: "Samo do vikendice (polazak iz NS)" },
+  { value: "return_only", label: "Samo povratak (do Novog Sada)" },
+  { value: "both", label: "Oba smera (polazak i povratak)" },
+  { value: "none", label: "Ne treba mi organizovan prevoz" },
+];
+
+function toggleDrinkPreference(
+  prefs: DrinkPreference[],
+  v: DrinkPreference,
+): DrinkPreference[] {
+  const i = prefs.indexOf(v);
+  if (i >= 0) return prefs.filter((_, j) => j !== i);
+  if (prefs.length >= 2) return prefs;
+  return [...prefs, v];
+}
+
+function wantsPickupZones(form: FormState): boolean {
+  const d = form.transportDirection;
+  return (
+    form.attendanceStatus !== "no" &&
+    (d === "to_cottage" || d === "return_only" || d === "both")
+  );
+}
+
+function needsOutboundZone(d: FormState["transportDirection"]): boolean {
+  return d === "to_cottage" || d === "both";
+}
+
+function needsReturnZone(d: FormState["transportDirection"]): boolean {
+  return d === "return_only" || d === "both";
+}
+
 function stepOrder(form: FormState): StepId[] {
   const o: StepId[] = ["name", "attendance"];
   if (form.attendanceStatus === "no") {
@@ -43,7 +81,7 @@ function stepOrder(form: FormState): StepId[] {
   if (form.attendanceStatus === "yes" || form.attendanceStatus === "") {
     o.push("phone");
     o.push("transport");
-    if (form.needsTransport === "yes") {
+    if (wantsPickupZones(form)) {
       o.push("pickupZone");
     }
   }
@@ -53,8 +91,7 @@ function stepOrder(form: FormState): StepId[] {
 
 function validateStep(step: StepId, form: FormState): FieldErrors {
   const errors: FieldErrors = {};
-  const showTransport =
-    form.needsTransport === "yes" && form.attendanceStatus !== "no";
+  const d = form.transportDirection;
 
   switch (step) {
     case "name":
@@ -78,27 +115,45 @@ function validateStep(step: StepId, form: FormState): FieldErrors {
       }
       break;
     case "transport":
-      if (!form.needsTransport) {
-        errors.needsTransport = "Reci nam da li ti treba organizovan prevoz.";
+      if (!form.transportDirection) {
+        errors.transportDirection =
+          "Izaberi smer prevoza ili da ti ne treba prevoz.";
       }
       break;
     case "pickupZone":
-      if (showTransport) {
-        if (!form.pickupLocation) {
-          errors.pickupLocation = "Izaberi zonu / stanicu.";
+      if (wantsPickupZones(form)) {
+        if (needsOutboundZone(d)) {
+          if (!form.pickupLocation) {
+            errors.pickupLocation = "Izaberi zonu / stanicu za polazak.";
+          }
+          if (
+            form.pickupLocation === "other" &&
+            !form.customPickupLocation.trim()
+          ) {
+            errors.customPickupLocation =
+              "Opiši tačno mesto polaska.";
+          }
         }
-        if (
-          form.pickupLocation === "other" &&
-          !form.customPickupLocation.trim()
-        ) {
-          errors.customPickupLocation =
-            "Opiši tačno gde da te pokupimo.";
+        if (needsReturnZone(d)) {
+          if (!form.pickupLocationReturn) {
+            errors.pickupLocationReturn =
+              "Izaberi zonu / stanicu za povratak.";
+          }
+          if (
+            form.pickupLocationReturn === "other" &&
+            !form.customPickupLocationReturn.trim()
+          ) {
+            errors.customPickupLocationReturn =
+              "Opiši tačno mesto za povratak.";
+          }
         }
       }
       break;
     case "drink":
-      if (!form.drinkPreference) {
-        errors.drinkPreference = "Izaberi šta da planiramo za piće.";
+      if (form.drinkPreferences.length === 0) {
+        errors.drinkPreferences = "Izaberi bar jedno piće.";
+      } else if (form.drinkPreferences.length > 2) {
+        errors.drinkPreferences = "Najviše dva izbora.";
       }
       break;
     case "decline":
@@ -150,9 +205,9 @@ const stepTitles: Record<StepId, string> = {
   attendance: "Da li dolaziš?",
   decline: "Imaš još jedan momenat da razmisliš",
   transport: "Do žurke",
-  pickupZone: "Zona preuzimanja",
+  pickupZone: "Zone (polazak i povratak)",
   drink: "Šta sipamo?",
-  extra: "Pesma i napomena",
+  extra: "Zahtev za pesmu",
   review: "Gotovo — pregled",
 };
 
@@ -195,7 +250,7 @@ export function RsvpForm({
 
   const steps = useMemo(
     () => stepOrder(form),
-    [form.attendanceStatus, form.needsTransport],
+    [form.attendanceStatus, form.transportDirection],
   );
   const currentStep: StepId = steps.includes(activeStepId)
     ? activeStepId
@@ -217,9 +272,7 @@ export function RsvpForm({
       return;
     }
     if (activeStepId === "transport") {
-      setActiveStepId(
-        form.needsTransport === "yes" ? "pickupZone" : "drink",
-      );
+      setActiveStepId(wantsPickupZones(form) ? "pickupZone" : "drink");
       return;
     }
     if (steps.includes("decline")) {
@@ -227,10 +280,9 @@ export function RsvpForm({
       return;
     }
     setActiveStepId(steps[0] ?? "name");
-  }, [steps, activeStepId, form.needsTransport, form.attendanceStatus]);
+  }, [steps, activeStepId, form.transportDirection, form.attendanceStatus]);
 
-  const showTransportFields =
-    form.needsTransport === "yes" && form.attendanceStatus !== "no";
+  const showPickupZoneStep = wantsPickupZones(form);
 
   const goNext = useCallback(() => {
     if (currentStep === "name" && nameStepBlocked) return;
@@ -492,12 +544,13 @@ export function RsvpForm({
                             attendanceStatus: value,
                             ...(value === "no"
                               ? {
-                                  needsTransport: "" as const,
+                                  transportDirection: "" as const,
                                   pickupLocation: "",
                                   customPickupLocation: "",
-                                  drinkPreference: "",
+                                  pickupLocationReturn: "",
+                                  customPickupLocationReturn: "",
+                                  drinkPreferences: [],
                                   songRequest: "",
-                                  note: "",
                                 }
                               : {}),
                           }))
@@ -521,128 +574,246 @@ export function RsvpForm({
             {currentStep === "transport" && (
               <div className="mt-4 space-y-4">
                 <p className="rounded-xl border border-[rgba(138,101,28,0.12)] bg-[#FFFCF7] px-3 py-2.5 text-xs leading-relaxed text-[#4a4034] sm:text-sm">
-                  <strong className="text-[#1c1917]">Oko 19:00</strong> polasci.
-                  Ako označiš da ti treba prevoz, sledeći korak je izbor zone.
+                  Prvo izaberi <strong className="text-[#1c1917]">smer</strong>{" "}
+                  prevoza. Na sledećem koraku biraš{" "}
+                  <strong className="text-[#1c1917]">zonu</strong> u Novom Sadu
+                  (polazak i/ili povratak).
                 </p>
 
                 <fieldset>
                   <legend className="text-sm font-semibold text-[#1c1917]">
-                    Treba ti organizovan prevoz?{" "}
+                    Šta ti treba od organizovanog prevoza?{" "}
                     <span className="text-[#C99A2E]">*</span>
                   </legend>
-                  <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                    {(["yes", "no"] as const).map((v) => (
+                  <div className="mt-2 flex flex-col gap-2">
+                    {TRANSPORT_OPTIONS.map(({ value, label }) => (
                       <label
-                        key={v}
-                        className={`flex min-h-[44px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2.5 transition active:scale-[0.99] sm:min-h-[46px] sm:px-4 sm:py-3 ${
-                          form.needsTransport === v
+                        key={value}
+                        className={`flex min-h-[44px] cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition active:scale-[0.99] sm:min-h-[46px] sm:px-4 sm:py-3 ${
+                          form.transportDirection === value
                             ? "border-[#C99A2E] bg-[#FAF0D4]/90 shadow-sm"
                             : "border-[rgba(138,101,28,0.18)] bg-white/95"
                         }`}
                       >
                         <input
                           type="radio"
-                          name="transport"
-                          value={v}
-                          checked={form.needsTransport === v}
+                          name="transportDirection"
+                          value={value}
+                          checked={form.transportDirection === value}
                           onChange={() =>
-                            setForm((f) => ({
-                              ...f,
-                              needsTransport: v,
-                              ...(v === "no"
-                                ? {
-                                    pickupLocation: "",
-                                    customPickupLocation: "",
-                                  }
-                                : {}),
-                            }))
+                            setForm((f): FormState => {
+                              const next = value;
+                              const Z = "" as PickupLocation | "";
+                              const clearAll = {
+                                pickupLocation: Z,
+                                customPickupLocation: "",
+                                pickupLocationReturn: Z,
+                                customPickupLocationReturn: "",
+                              };
+                              if (next === "none") {
+                                return {
+                                  ...f,
+                                  transportDirection: next,
+                                  ...clearAll,
+                                };
+                              }
+                              if (next === "to_cottage") {
+                                return {
+                                  ...f,
+                                  transportDirection: next,
+                                  pickupLocationReturn: Z,
+                                  customPickupLocationReturn: "",
+                                };
+                              }
+                              if (next === "return_only") {
+                                return {
+                                  ...f,
+                                  transportDirection: next,
+                                  pickupLocation: Z,
+                                  customPickupLocation: "",
+                                };
+                              }
+                              return { ...f, transportDirection: next };
+                            })
                           }
-                          className="h-4 w-4 accent-[#C99A2E]"
+                          className="h-4 w-4 shrink-0 accent-[#C99A2E]"
                         />
-                        <span className="text-sm font-semibold capitalize text-[#1c1917]">
-                          {v === "yes" ? "Da" : "Ne"}
+                        <span className="text-left text-sm font-medium text-[#1c1917] sm:text-[15px]">
+                          {label}
                         </span>
                       </label>
                     ))}
                   </div>
-                  {errors.needsTransport && (
+                  {errors.transportDirection && (
                     <p className="mt-2 text-sm text-[#9a3b2f]">
-                      {errors.needsTransport}
+                      {errors.transportDirection}
                     </p>
                   )}
                 </fieldset>
               </div>
             )}
 
-            {currentStep === "pickupZone" && showTransportFields && (
+            {currentStep === "pickupZone" && showPickupZoneStep && (
               <div className="mt-4 space-y-4">
-                <div className="space-y-3 rounded-xl border border-[rgba(138,101,28,0.12)] bg-white/95 p-4 backdrop-blur-sm">
-                  <div>
-                    <label
-                      htmlFor="pickupLocation"
-                      className="block text-sm font-semibold text-[#1c1917]"
-                    >
-                      Stanica / zona (Novi Sad){" "}
-                      <span className="text-[#C99A2E]">*</span>
-                    </label>
-                    <select
-                      id="pickupLocation"
-                      name="pickupLocation"
-                      value={form.pickupLocation}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          pickupLocation: e.target.value as
-                            | PickupLocation
-                            | "",
-                          customPickupLocation:
-                            e.target.value === "other"
-                              ? f.customPickupLocation
-                              : "",
-                        }))
-                      }
-                      className="mt-2 w-full min-h-[48px] rounded-xl border border-[rgba(138,101,28,0.2)] bg-white px-3 py-2.5 text-sm text-[#1c1917] outline-none focus:border-[#C99A2E] focus:ring-2 focus:ring-[#E7C76F]/40 sm:text-base"
-                    >
-                      <option value="">Izaberi…</option>
-                      {PICKUP_LOCATIONS.map(({ value, label }) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.pickupLocation && (
-                      <p className="mt-2 text-sm text-[#9a3b2f]">
-                        {errors.pickupLocation}
-                      </p>
-                    )}
-                  </div>
-
-                  {form.pickupLocation === "other" && (
-                    <div>
-                      <label
-                        htmlFor="customPickup"
-                        className="block text-sm font-semibold text-[#1c1917]"
-                      >
-                        Tačno mesto{" "}
+                <p className="text-xs leading-relaxed text-[#6b5b42] sm:text-sm">
+                  <strong className="text-[#1c1917]">Oko 19:00</strong> polasci za
+                  smer ka vikendici — tačno vreme po zoni javlja domaćin.
+                </p>
+                <div className="space-y-5 rounded-xl border border-[rgba(138,101,28,0.12)] bg-white/95 p-4 backdrop-blur-sm">
+                  {needsOutboundZone(form.transportDirection) && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold text-[#1c1917]">
+                        Polazak (do vikendice){" "}
                         <span className="text-[#C99A2E]">*</span>
-                      </label>
-                      <input
-                        id="customPickup"
-                        name="customPickup"
-                        type="text"
-                        value={form.customPickupLocation}
-                        onChange={(e) =>
-                          setForm((f) => ({
-                            ...f,
-                            customPickupLocation: e.target.value,
-                          }))
-                        }
-                        className="mt-2 w-full min-h-[44px] rounded-xl border border-[rgba(138,101,28,0.2)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#C99A2E] focus:ring-2 focus:ring-[#E7C76F]/40 sm:text-base"
-                      />
-                      {errors.customPickupLocation && (
-                        <p className="mt-2 text-sm text-[#9a3b2f]">
-                          {errors.customPickupLocation}
-                        </p>
+                      </p>
+                      <div>
+                        <label
+                          htmlFor="pickupLocation"
+                          className="block text-sm font-semibold text-[#1c1917]"
+                        >
+                          Stanica / zona (Novi Sad)
+                        </label>
+                        <select
+                          id="pickupLocation"
+                          name="pickupLocation"
+                          value={form.pickupLocation}
+                          onChange={(e) =>
+                            setForm((f) => ({
+                              ...f,
+                              pickupLocation: e.target.value as
+                                | PickupLocation
+                                | "",
+                              customPickupLocation:
+                                e.target.value === "other"
+                                  ? f.customPickupLocation
+                                  : "",
+                            }))
+                          }
+                          className="mt-2 w-full min-h-[48px] rounded-xl border border-[rgba(138,101,28,0.2)] bg-white px-3 py-2.5 text-sm text-[#1c1917] outline-none focus:border-[#C99A2E] focus:ring-2 focus:ring-[#E7C76F]/40 sm:text-base"
+                        >
+                          <option value="">Izaberi…</option>
+                          {PICKUP_LOCATIONS.map(({ value, label }) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.pickupLocation && (
+                          <p className="mt-2 text-sm text-[#9a3b2f]">
+                            {errors.pickupLocation}
+                          </p>
+                        )}
+                      </div>
+                      {form.pickupLocation === "other" && (
+                        <div>
+                          <label
+                            htmlFor="customPickup"
+                            className="block text-sm font-semibold text-[#1c1917]"
+                          >
+                            Tačno mesto (polazak){" "}
+                            <span className="text-[#C99A2E]">*</span>
+                          </label>
+                          <input
+                            id="customPickup"
+                            name="customPickup"
+                            type="text"
+                            value={form.customPickupLocation}
+                            onChange={(e) =>
+                              setForm((f) => ({
+                                ...f,
+                                customPickupLocation: e.target.value,
+                              }))
+                            }
+                            className="mt-2 w-full min-h-[44px] rounded-xl border border-[rgba(138,101,28,0.2)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#C99A2E] focus:ring-2 focus:ring-[#E7C76F]/40 sm:text-base"
+                          />
+                          {errors.customPickupLocation && (
+                            <p className="mt-2 text-sm text-[#9a3b2f]">
+                              {errors.customPickupLocation}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {needsReturnZone(form.transportDirection) && (
+                    <div
+                      className={
+                        needsOutboundZone(form.transportDirection)
+                          ? "space-y-3 border-t border-[#E8DFD0] pt-4"
+                          : "space-y-3"
+                      }
+                    >
+                      <p className="text-sm font-semibold text-[#1c1917]">
+                        Povratak (do Novog Sada){" "}
+                        <span className="text-[#C99A2E]">*</span>
+                      </p>
+                      <div>
+                        <label
+                          htmlFor="pickupLocationReturn"
+                          className="block text-sm font-semibold text-[#1c1917]"
+                        >
+                          Stanica / zona (Novi Sad)
+                        </label>
+                        <select
+                          id="pickupLocationReturn"
+                          name="pickupLocationReturn"
+                          value={form.pickupLocationReturn}
+                          onChange={(e) =>
+                            setForm((f) => ({
+                              ...f,
+                              pickupLocationReturn: e.target.value as
+                                | PickupLocation
+                                | "",
+                              customPickupLocationReturn:
+                                e.target.value === "other"
+                                  ? f.customPickupLocationReturn
+                                  : "",
+                            }))
+                          }
+                          className="mt-2 w-full min-h-[48px] rounded-xl border border-[rgba(138,101,28,0.2)] bg-white px-3 py-2.5 text-sm text-[#1c1917] outline-none focus:border-[#C99A2E] focus:ring-2 focus:ring-[#E7C76F]/40 sm:text-base"
+                        >
+                          <option value="">Izaberi…</option>
+                          {PICKUP_LOCATIONS.map(({ value, label }) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.pickupLocationReturn && (
+                          <p className="mt-2 text-sm text-[#9a3b2f]">
+                            {errors.pickupLocationReturn}
+                          </p>
+                        )}
+                      </div>
+                      {form.pickupLocationReturn === "other" && (
+                        <div>
+                          <label
+                            htmlFor="customPickupReturn"
+                            className="block text-sm font-semibold text-[#1c1917]"
+                          >
+                            Tačno mesto (povratak){" "}
+                            <span className="text-[#C99A2E]">*</span>
+                          </label>
+                          <input
+                            id="customPickupReturn"
+                            name="customPickupReturn"
+                            type="text"
+                            value={form.customPickupLocationReturn}
+                            onChange={(e) =>
+                              setForm((f) => ({
+                                ...f,
+                                customPickupLocationReturn: e.target.value,
+                              }))
+                            }
+                            className="mt-2 w-full min-h-[44px] rounded-xl border border-[rgba(138,101,28,0.2)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#C99A2E] focus:ring-2 focus:ring-[#E7C76F]/40 sm:text-base"
+                          />
+                          {errors.customPickupLocationReturn && (
+                            <p className="mt-2 text-sm text-[#9a3b2f]">
+                              {errors.customPickupLocationReturn}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
@@ -652,35 +823,54 @@ export function RsvpForm({
 
             {currentStep === "drink" && (
               <fieldset className="mt-4">
-                <label
-                  htmlFor="drinkPreference"
-                  className="text-sm font-semibold text-[#1c1917]"
-                >
+                <legend className="text-sm font-semibold text-[#1c1917]">
                   Šta da planiramo za piće?{" "}
-                  <span className="text-[#C99A2E]">*</span>
-                </label>
-                <select
-                  id="drinkPreference"
-                  name="drinkPreference"
-                  value={form.drinkPreference}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      drinkPreference: e.target.value as DrinkPreference | "",
-                    }))
-                  }
-                  className="mt-2 w-full min-h-[48px] rounded-xl border border-[rgba(138,101,28,0.2)] bg-white px-3 py-2.5 text-sm text-[#1c1917] outline-none focus:border-[#C99A2E] focus:ring-2 focus:ring-[#E7C76F]/40 sm:text-base"
-                >
-                  <option value="">Izaberi…</option>
-                  {DRINK_OPTIONS.map(({ value, label }) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                {errors.drinkPreference && (
+                  <span className="text-[#C99A2E]">*</span>{" "}
+                  <span className="font-normal text-[#6b5b42]">
+                    (maks. dva izbora)
+                  </span>
+                </legend>
+                <p className="mt-1 text-xs text-[#6b5b42]">
+                  Dodirni jedno ili dva pića sa liste.
+                </p>
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {DRINK_OPTIONS.map(({ value, label }) => {
+                    const checked = form.drinkPreferences.includes(value);
+                    return (
+                      <label
+                        key={value}
+                        className={`flex min-h-[44px] cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition active:scale-[0.99] ${
+                          checked
+                            ? "border-[#C99A2E] bg-[#FAF0D4]/90 shadow-sm"
+                            : "border-[rgba(138,101,28,0.18)] bg-white/95"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          name="drink"
+                          value={value}
+                          checked={checked}
+                          onChange={() =>
+                            setForm((f) => ({
+                              ...f,
+                              drinkPreferences: toggleDrinkPreference(
+                                f.drinkPreferences,
+                                value,
+                              ),
+                            }))
+                          }
+                          className="h-4 w-4 shrink-0 rounded border-[#C99A2E] accent-[#C99A2E]"
+                        />
+                        <span className="text-left text-sm text-[#1c1917]">
+                          {label}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {errors.drinkPreferences && (
                   <p className="mt-2 text-sm text-[#9a3b2f]">
-                    {errors.drinkPreference}
+                    {errors.drinkPreferences}
                   </p>
                 )}
               </fieldset>
@@ -705,24 +895,6 @@ export function RsvpForm({
                     }
                     placeholder="Izvođač — naslov pesme"
                     className="mt-1.5 w-full min-h-[44px] rounded-xl border border-[rgba(138,101,28,0.2)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#C99A2E] focus:ring-2 focus:ring-[#E7C76F]/40 sm:text-base"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="note"
-                    className="block text-sm font-semibold text-[#1c1917]"
-                  >
-                    Napomena (alergije, +1, ostalo)
-                  </label>
-                  <textarea
-                    id="note"
-                    name="note"
-                    rows={2}
-                    value={form.note}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, note: e.target.value }))
-                    }
-                    className="mt-1.5 w-full resize-none rounded-xl border border-[rgba(138,101,28,0.2)] bg-white px-3 py-2 text-sm outline-none focus:border-[#C99A2E] focus:ring-2 focus:ring-[#E7C76F]/40 sm:text-base"
                   />
                 </div>
               </div>
@@ -756,46 +928,52 @@ export function RsvpForm({
                   <>
                     <div className="flex flex-col gap-0.5 border-b border-[#E8DFD0] pb-2.5 sm:flex-row sm:justify-between">
                       <dt className="text-[#6b5b42]">Prevoz</dt>
-                      <dd className="font-semibold text-[#1c1917]">
-                        {form.needsTransport === "yes"
-                          ? "Da"
-                          : form.needsTransport === "no"
-                            ? "Ne"
-                            : "—"}
+                      <dd className="text-right font-semibold text-[#1c1917]">
+                        {transportDirectionLabel(form.transportDirection)}
                       </dd>
                     </div>
-                    {showTransportFields && form.pickupLocation && (
-                      <div className="flex flex-col gap-0.5 border-b border-[#E8DFD0] pb-2.5 sm:flex-row sm:justify-between">
-                        <dt className="text-[#6b5b42]">Stanica</dt>
-                        <dd className="text-right font-semibold text-[#1c1917]">
-                          {pickupLabel(form.pickupLocation as PickupLocation)}
-                          {form.pickupLocation === "other" &&
-                          form.customPickupLocation
-                            ? ` — ${form.customPickupLocation}`
-                            : ""}
-                        </dd>
-                      </div>
-                    )}
+                    {showPickupZoneStep &&
+                      needsOutboundZone(form.transportDirection) &&
+                      form.pickupLocation && (
+                        <div className="flex flex-col gap-0.5 border-b border-[#E8DFD0] pb-2.5 sm:flex-row sm:justify-between">
+                          <dt className="text-[#6b5b42]">Polazak (zona)</dt>
+                          <dd className="text-right font-semibold text-[#1c1917]">
+                            {pickupLabel(form.pickupLocation as PickupLocation)}
+                            {form.pickupLocation === "other" &&
+                            form.customPickupLocation
+                              ? ` — ${form.customPickupLocation}`
+                              : ""}
+                          </dd>
+                        </div>
+                      )}
+                    {showPickupZoneStep &&
+                      needsReturnZone(form.transportDirection) &&
+                      form.pickupLocationReturn && (
+                        <div className="flex flex-col gap-0.5 border-b border-[#E8DFD0] pb-2.5 sm:flex-row sm:justify-between">
+                          <dt className="text-[#6b5b42]">Povratak (zona)</dt>
+                          <dd className="text-right font-semibold text-[#1c1917]">
+                            {pickupLabel(
+                              form.pickupLocationReturn as PickupLocation,
+                            )}
+                            {form.pickupLocationReturn === "other" &&
+                            form.customPickupLocationReturn
+                              ? ` — ${form.customPickupLocationReturn}`
+                              : ""}
+                          </dd>
+                        </div>
+                      )}
                   </>
                 )}
                 <div className="flex flex-col gap-0.5 border-b border-[#E8DFD0] pb-2.5 sm:flex-row sm:justify-between">
                   <dt className="text-[#6b5b42]">Piće</dt>
-                  <dd className="font-semibold text-[#1c1917]">
-                    {form.drinkPreference
-                      ? drinkLabel(form.drinkPreference as DrinkPreference)
-                      : "—"}
-                  </dd>
-                </div>
-                <div className="flex flex-col gap-0.5 border-b border-[#E8DFD0] pb-2.5 sm:flex-row sm:justify-between">
-                  <dt className="text-[#6b5b42]">Pesma</dt>
-                  <dd className="break-words text-[#1c1917]">
-                    {form.songRequest || "—"}
+                  <dd className="text-right font-semibold text-[#1c1917]">
+                    {formatDrinkPreferences(form.drinkPreferences)}
                   </dd>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <dt className="text-[#6b5b42]">Napomena</dt>
+                  <dt className="text-[#6b5b42]">Pesma</dt>
                   <dd className="break-words text-[#1c1917]">
-                    {form.note || "—"}
+                    {form.songRequest || "—"}
                   </dd>
                 </div>
               </dl>

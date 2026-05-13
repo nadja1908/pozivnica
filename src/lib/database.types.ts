@@ -1,4 +1,4 @@
-import type { AttendanceStatus, DrinkPreference, PickupLocation } from "../types/rsvp";
+import type { AttendanceStatus, PickupLocation, TransportDirection } from "../types/rsvp";
 
 export interface RsvpRowDb {
   id: string;
@@ -7,9 +7,12 @@ export interface RsvpRowDb {
   phone: string | null;
   attendance_status: AttendanceStatus;
   needs_transport: boolean;
+  transport_direction: TransportDirection | null;
   pickup_location: PickupLocation | null;
   custom_pickup_location: string | null;
-  drink_preference: DrinkPreference;
+  pickup_location_return: PickupLocation | null;
+  custom_pickup_location_return: string | null;
+  drink_preference: string;
   song_request: string | null;
   note: string | null;
   created_at: string;

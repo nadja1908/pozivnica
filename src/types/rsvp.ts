@@ -26,6 +26,9 @@ export type PickupLocation =
   | "veternik"
   | "other";
 
+/** Organizovan prevoz: smer; zone biraju se u sledećem koraku. */
+export type TransportDirection = "none" | "to_cottage" | "return_only" | "both";
+
 export interface RsvpResponse {
   id: string;
   guestId: string | null;
@@ -33,9 +36,12 @@ export interface RsvpResponse {
   phoneE164: string | null;
   attendanceStatus: AttendanceStatus;
   needsTransport: boolean;
+  transportDirection: TransportDirection | null;
   pickupLocation: PickupLocation | null;
   customPickupLocation: string | null;
-  drinkPreference: DrinkPreference;
+  pickupLocationReturn: PickupLocation | null;
+  customPickupLocationReturn: string | null;
+  drinkPreferences: DrinkPreference[];
   songRequest: string | null;
   note: string | null;
   createdAt: string;
@@ -47,9 +53,12 @@ export interface RsvpPayload {
   phoneE164: string;
   attendanceStatus: AttendanceStatus;
   needsTransport: boolean;
+  transportDirection: TransportDirection | null;
   pickupLocation: PickupLocation | null;
   customPickupLocation: string | null;
-  drinkPreference: DrinkPreference;
+  pickupLocationReturn: PickupLocation | null;
+  customPickupLocationReturn: string | null;
+  drinkPreferences: DrinkPreference[];
   songRequest: string | null;
   note: string | null;
 }
