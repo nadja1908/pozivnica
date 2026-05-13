@@ -850,16 +850,17 @@ export function RsvpForm({
               <div className="mt-4 space-y-4">
                 <p className="text-xs leading-relaxed text-[#6b5b42] sm:text-sm">
                   Opciono — jedna slika za spomenar (JPG, PNG ili WebP, do{" "}
-                  <strong className="text-[#1c1917]">5 MB</strong>). Možeš i da
-                  preskočiš.
+                  <strong className="text-[#1c1917]">5 MB</strong>). Na telefonu
+                  obično možeš da izabereš{" "}
+                  <strong className="text-[#1c1917]">kameru ili galeriju</strong>.
+                  Možeš i da preskočiš.
                 </p>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                   <label className="inline-flex min-h-[46px] cursor-pointer items-center justify-center rounded-full border-2 border-[#C99A2E] bg-[#FAF0D4]/80 px-5 py-2.5 text-sm font-semibold text-[#5c4a32] transition hover:bg-[#FAF0D4] active:scale-[0.99]">
-                    <span>Izaberi ili uslikaj</span>
+                    <span>Dodaj sliku</span>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
-                      capture="user"
                       className="sr-only"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
