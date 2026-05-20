@@ -1,8 +1,8 @@
 export const EVENT_TIMEZONE = "Europe/Belgrade";
 
-export const EVENT_START_ISO = "2026-05-30T19:00:00";
+export const EVENT_START_ISO = "2026-05-31T19:00:00";
 
-export const EVENT_END_ISO = "2026-05-31T00:00:00";
+export const EVENT_END_ISO = "2026-06-01T00:00:00";
 
 export const EDIT_WINDOW_DAYS_BEFORE = 5;
 
@@ -27,7 +27,7 @@ export function canEditRsvpNow(now = new Date()): boolean {
 
 export const EVENT_SUMMARY_LINES = [
   "Proslava na vikendici — obuci se lepo.",
-  "Subota 30. maj · od 19:00 do 00:00 (ponoć).",
+  "Nedelja 31. maj · od 19:00 do 00:00 (ponoć).",
   "Organizovan prevoz biće obezbeđen — više stanica / zona preuzimanja širom grada (biraš u potvrdi ako ti treba prevoz).",
 ] as const;
 
