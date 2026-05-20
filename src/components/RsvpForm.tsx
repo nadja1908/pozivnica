@@ -464,6 +464,7 @@ export function RsvpForm({
                 >
                   {stepIndex + 1} / {totalSteps}
                 </p>
+
                 <p className="mb-2 mt-2 text-sm font-semibold text-[#1c1917]">
                   Ime kao na pozivnici{" "}
                   <span className="text-[#C99A2E]">*</span>
@@ -494,6 +495,12 @@ export function RsvpForm({
                 )}
                 {errors.guestId && (
                   <p className="mt-2 text-sm text-[#9a3b2f]">{errors.guestId}</p>
+                )}
+                {!guestsLoading && hasGuestList && !lockGuestSelection && (
+                  <p className="mt-3 rounded-xl border border-[rgba(138,101,28,0.12)] bg-[#FFFCF7] px-3 py-2.5 text-xs leading-relaxed text-[#6b5b42] sm:text-sm">
+                    Ako te nema na listi, pošalji domaćinu poruku (Viber,
+                    WhatsApp ili Instagram).
+                  </p>
                 )}
               </div>
             )}

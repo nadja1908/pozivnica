@@ -98,7 +98,7 @@ export function GuestSearchPick({
           <p className="px-4 py-8 text-center text-sm text-champagne-600">
             {guests.length === 0
               ? "Spisak se još učitava."
-              : "Nema pogotka — obriši pretragu ili proveri slova."}
+              : "Nema pogotka — proveri slova ili javi domaćinu porukom (vidi obaveštenje ispod)."}
           </p>
         ) : (
           <ul className="divide-y divide-champagne-100/90 p-2">
