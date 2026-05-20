@@ -1,10 +1,10 @@
 import {
-  EVENT_LOCATION_DISPLAY,
   EVENT_SUMMARY_LINES,
   getEditDeadline,
   getEventEnd,
   getEventStart,
 } from "../constants/event";
+import { EventLocationLink } from "./EventLocationLink";
 import { SectionCard } from "./SectionCard";
 
 export function EventDetails() {
@@ -32,10 +32,14 @@ export function EventDetails() {
     timeStyle: "short",
   }).format(deadline);
 
-  const detailItems = [
+  const detailItems: {
+    title: string;
+    value: string;
+    locationLink?: boolean;
+  }[] = [
     { title: "Datum", value: dateLine },
     { title: "Vreme", value: timeLine },
-    { title: "Mesto", value: EVENT_LOCATION_DISPLAY },
+    { title: "Mesto", value: "", locationLink: true },
     { title: "Odevanje", value: EVENT_SUMMARY_LINES[0] },
     { title: "Potvrdi dolazak do", value: deadlineLine },
   ];
@@ -59,7 +63,11 @@ export function EventDetails() {
               {item.title}
             </h3>
             <p className="mt-2 font-sans text-sm leading-snug text-[#111111] sm:text-[15px]">
-              {item.value}
+              {item.locationLink ? (
+                <EventLocationLink />
+              ) : (
+                item.value
+              )}
             </p>
           </article>
         ))}

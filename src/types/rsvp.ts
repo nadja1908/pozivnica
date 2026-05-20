@@ -3,21 +3,17 @@ export type AttendanceStatus = "yes" | "maybe" | "no";
 export type DrinkPreference =
   | "wine"
   | "beer"
-  | "sparkling"
-  | "champagne"
   | "vodka"
   | "gin_tonic"
   | "whiskey"
-  | "rum"
   | "tequila"
   | "cocktails"
-  | "cider"
-  | "non_alcoholic"
-  | "soft_drinks"
-  | "surprise_me"
-  | "other";
+  | "non_alcoholic";
 
+/** Aktivne stanice u formi; ostalo samo za stare zapise u bazi. */
 export type PickupLocation =
+  | "gsp_futogski_put"
+  | "novo_naselje"
   | "kampus"
   | "parkovi"
   | "parking_idea_liman"

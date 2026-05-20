@@ -1,8 +1,8 @@
 export const EVENT_TIMEZONE = "Europe/Belgrade";
 
-export const EVENT_START_ISO = "2026-06-05T19:00:00";
+export const EVENT_START_ISO = "2026-05-30T19:00:00";
 
-export const EVENT_END_ISO = "2026-06-06T01:00:00";
+export const EVENT_END_ISO = "2026-05-31T00:00:00";
 
 export const EDIT_WINDOW_DAYS_BEFORE = 5;
 
@@ -27,12 +27,14 @@ export function canEditRsvpNow(now = new Date()): boolean {
 
 export const EVENT_SUMMARY_LINES = [
   "Proslava na vikendici — obuci se lepo.",
-  "Petak 5. jun · oko 19:00 — kasno u noć subote 6. jun (~1:00).",
+  "Subota 30. maj · od 19:00 do 00:00 (ponoć).",
   "Organizovan prevoz biće obezbeđen — više stanica / zona preuzimanja širom grada (biraš u potvrdi ako ti treba prevoz).",
 ] as const;
 
-export const EVENT_LOCATION_DISPLAY =
-  "Vikendica – tačna zona prevoza u tvojoj potvrdi";
+export const EVENT_LOCATION_MAPS_URL =
+  "https://maps.google.com/?q=45.177479,19.952072";
+
+export const EVENT_LOCATION_DISPLAY = "H2O Oaza — vikendica";
 
 const SR_MONTHS_SHORT = [
   "jan",
@@ -54,9 +56,18 @@ export function formatEventDateSerbian(date = getEventStart()): string {
   return `${date.getDate()}. ${SR_MONTHS_SHORT[date.getMonth()]} ${date.getFullYear()}.`;
 }
 
-/** Vreme početka u formatu HH:mm (lokalno za ISO polje). */
-export function formatEventTimeSerbian(date = getEventStart()): string {
+function formatClock(date: Date): string {
   const h = date.getHours().toString().padStart(2, "0");
   const m = date.getMinutes().toString().padStart(2, "0");
   return `${h}:${m}`;
+}
+
+/** Vreme početka u formatu HH:mm (lokalno za ISO polje). */
+export function formatEventTimeSerbian(date = getEventStart()): string {
+  return formatClock(date);
+}
+
+/** Interval žurke za karticu pozivnice. */
+export function formatEventTimeRangeSerbian(): string {
+  return `${formatClock(getEventStart())} – ${formatClock(getEventEnd())}`;
 }

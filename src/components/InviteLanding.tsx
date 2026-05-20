@@ -1,12 +1,8 @@
 import { useState } from "react";
 import { GraduationCapMotif } from "./GraduationMotif";
 import { EventDetails } from "./EventDetails";
-import {
-  EVENT_LOCATION_DISPLAY,
-  getEditDeadline,
-  getEventEnd,
-  getEventStart,
-} from "../constants/event";
+import { getEditDeadline, getEventEnd, getEventStart } from "../constants/event";
+import { EventLocationLink } from "./EventLocationLink";
 
 interface InviteLandingProps {
   onStartWizard: () => void;
@@ -196,7 +192,7 @@ export function InviteLanding({
               Lokacija
             </span>
             <span className="mt-1 block text-[15px] font-normal leading-snug">
-              {EVENT_LOCATION_DISPLAY}
+              <EventLocationLink />
             </span>
           </span>
         </li>

@@ -3,9 +3,11 @@ import type { LucideIcon } from "lucide-react";
 import { Calendar, Clock, MapPin } from "lucide-react";
 import {
   EVENT_LOCATION_DISPLAY,
+  EVENT_LOCATION_MAPS_URL,
   formatEventDateSerbian,
-  formatEventTimeSerbian,
+  formatEventTimeRangeSerbian,
 } from "./constants/event";
+import { EventLocationLink } from "./components/EventLocationLink";
 import { RsvpForm } from "./components/RsvpForm";
 import { useGuests } from "./hooks/useGuests";
 import { isSupabaseConfigured } from "./lib/supabase";
@@ -45,6 +47,7 @@ const EVENT_ROWS: {
   icon: LucideIcon;
   label: string;
   value: string;
+  mapsUrl?: string;
 }[] = [
   {
     icon: Calendar,
@@ -54,12 +57,13 @@ const EVENT_ROWS: {
   {
     icon: Clock,
     label: "Vreme",
-    value: formatEventTimeSerbian(),
+    value: formatEventTimeRangeSerbian(),
   },
   {
     icon: MapPin,
     label: "Mesto",
     value: EVENT_LOCATION_DISPLAY,
+    mapsUrl: EVENT_LOCATION_MAPS_URL,
   },
 ];
 
@@ -242,7 +246,7 @@ function EventInformationCard({
       ].join(" ")}
     >
       <ul className="divide-y divide-[rgba(138,101,28,0.15)]">
-        {EVENT_ROWS.map(({ icon: Icon, label, value }) => (
+        {EVENT_ROWS.map(({ icon: Icon, label, value, mapsUrl }) => (
           <li
             key={label}
             className="flex gap-3 py-3 first:pt-0 last:pb-0 sm:gap-3.5 sm:py-3.5 lg:py-2.5 xl:py-3"
@@ -255,7 +259,11 @@ function EventInformationCard({
                 {label}
               </p>
               <p className="mt-0.5 text-[13px] leading-snug text-[#111111] sm:text-[14px] lg:text-[13px] xl:text-[14px]">
-                {value}
+                {mapsUrl ? (
+                  <EventLocationLink className="text-[13px] sm:text-[14px] lg:text-[13px] xl:text-[14px]" />
+                ) : (
+                  value
+                )}
               </p>
             </div>
           </li>
