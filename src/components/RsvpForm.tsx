@@ -490,7 +490,7 @@ export function RsvpForm({
                     selectionLocked={lockGuestSelection}
                     disabled={!hasGuestList}
                     ariaInvalid={!!errors.guestId}
-                    inputId="invite-guest-search"
+                    inputId="invite-guest-list"
                   />
                 )}
                 {errors.guestId && (

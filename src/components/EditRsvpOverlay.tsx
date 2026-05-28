@@ -114,8 +114,7 @@ export function EditRsvpOverlay({
               value={guestId}
               onChange={setGuestId}
               disabled={guestList.length === 0}
-              inputId="edit-guest-search"
-              searchHint="Ceo spisak — nađi sebe, pa unesi OTP ispod."
+              inputId="edit-guest-list"
             />
           )}
         </div>
